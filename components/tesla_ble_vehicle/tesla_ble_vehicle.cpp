@@ -1202,7 +1202,7 @@ namespace esphome
     void TeslaBLEVehicle::load_polling_parameters (const int post_wake_poll_time, const int poll_data_period,
                                                    const int poll_asleep_period, const int poll_charging_period,
                                                    const int ble_disconnected_min_time, const int fast_poll_if_unlocked,
-                                                   const int wake_on_boot)
+                                                   const int wake_on_boot, const int allow_setting_schedules)
     {
       // All timings are in milliseconds
       post_wake_poll_time_ = post_wake_poll_time * 1000;
@@ -1212,6 +1212,7 @@ namespace esphome
       ble_disconnected_min_time_ = ble_disconnected_min_time * 1000;
       fast_poll_if_unlocked_ = fast_poll_if_unlocked;
       wake_on_boot_ = wake_on_boot;
+      allow_setting_schedules_ = allow_setting_schedules;
     }
 
     void TeslaBLEVehicle::regenerateKey()
@@ -1457,12 +1458,14 @@ namespace esphome
 
     int TeslaBLEVehicle::lockVehicle (VCSEC_RKEAction_E lock)
     {
-      ESP_LOGI (TAG, "(Un)locking) vehicle %d", lock);
+      static std:: string lock_command;
+//      ESP_LOGI (TAG, "(Un)locking) vehicle %d", lock);
       // enqueue command
       switch (lock)
       {
         case VCSEC_RKEAction_E_RKE_ACTION_UNLOCK:
-          ESP_LOGI(TAG, "Adding unlock Vehicle command to queue");
+          lock_command = "unlock vehicle";
+/*          ESP_LOGI(TAG, "Adding unlock Vehicle command to queue");
           placeAtFrontOfQueue (UniversalMessage_Domain_DOMAIN_VEHICLE_SECURITY, 
             [this]()
             {
@@ -1475,9 +1478,10 @@ namespace esphome
               return 0;
             },
             "unlock vehicle");
-          break;
+*/          break;
         case VCSEC_RKEAction_E_RKE_ACTION_LOCK:
-          ESP_LOGI(TAG, "Adding lock Vehicle command to queue");
+          lock_command = "sendCarServerVehicleActionMessagelock vehicle";
+/*          ESP_LOGI(TAG, "Adding lock Vehicle command to queue");
           placeAtFrontOfQueue (UniversalMessage_Domain_DOMAIN_VEHICLE_SECURITY, 
             [this]()
             {
@@ -1490,11 +1494,24 @@ namespace esphome
               return 0;
             },
             "lock vehicle");
-          break;
+*/          break;
         default:
           ESP_LOGE(TAG, "Invalid lock request");
           return -1;
       }
+      ESP_LOGI(TAG, "Adding %s command to queue", lock_command.c_str());
+      placeAtFrontOfQueue (UniversalMessage_Domain_DOMAIN_VEHICLE_SECURITY, 
+        [this, lock]()
+        {
+          int return_code = this->sendVCSECActionMessage(lock);
+          if (return_code != 0)
+          {
+            ESP_LOGE(TAG, "Failed to send lock command");
+            return return_code;
+          }
+          return 0;
+        },
+        lock_command);
       return 0;
     }
 
@@ -1569,17 +1586,17 @@ namespace esphome
           {
             case AllowedMsg::GetVehicleDataMessage:
             // Need to create a get vehicle data message
-              return_code = tesla_ble_client_->buildCarServerGetVehicleDataMessage (static_message_buffer_, &message_length, get_action_detail(action).actionTag);
+              return_code = actions_buildCarServerGetVehicleDataMessage (static_message_buffer_, &message_length, get_action_detail(action).actionTag);
               break;
             case AllowedMsg::VehicleActionMessage:
             // Need to create a vehicle action message
               if (long_param == 0)
               {
-                return_code = tesla_ble_client_->buildCarServerVehicleActionMessage (static_cast<int32_t>(param), static_message_buffer_, &message_length, get_action_detail(action).actionTag);
+                return_code = actions_buildCarServerVehicleActionMessage (static_cast<int32_t>(param), static_message_buffer_, &message_length, get_action_detail(action).actionTag);
               }
               else
               {
-                return_code = tesla_ble_client_->buildCarServerVehicleActionMessage (0, static_message_buffer_, &message_length, get_action_detail(action).actionTag, long_param);
+                return_code = actions_buildCarServerVehicleActionMessage (0, static_message_buffer_, &message_length, get_action_detail(action).actionTag, long_param);
               }
               if ((action == BLE_CarServer_VehicleAction::SET_CHARGING_SWITCH) and (param == 1))
               { // If charging has been requested, enable continuous polling
@@ -1736,7 +1753,7 @@ namespace esphome
         }
       }
     }
-    
+
     int TeslaBLEVehicle::handleInfoCarServerResponse (const CarServer_Response& carserver_response)
     {
       switch (carserver_response.which_response_msg)
@@ -1954,7 +1971,6 @@ namespace esphome
             {
               ESP_LOGI (TAG, "No data to set defrost mode");
             }
-
             if (carserver_response.response_msg.vehicleData.climate_state.which_optional_cabin_overheat_protection)
             {
               CarServer_ClimateState_CabinOverheatProtection_E cabin_overheat_protection_ = carserver_response.response_msg.vehicleData.climate_state.optional_cabin_overheat_protection.cabin_overheat_protection;
@@ -1976,6 +1992,28 @@ namespace esphome
               else
             {
               ESP_LOGI (TAG, "No data to set cabin overheat status");
+            }
+            if (carserver_response.response_msg.vehicleData.climate_state.which_optional_cop_activation_temperature)
+            {
+              CarServer_ClimateState_CopActivationTemp cabin_overheat_temp_ = carserver_response.response_msg.vehicleData.climate_state.optional_cop_activation_temperature.cop_activation_temperature;
+              switch (cabin_overheat_temp_)
+              {
+                case CarServer_ClimateState_CopActivationTemp_CopActivationTempLow:
+                  cabin_overheat_temp_select_->publish_state("Low");
+                  break;
+                case CarServer_ClimateState_CopActivationTemp_CopActivationTempMedium:
+                  cabin_overheat_temp_select_->publish_state("Medium");
+                  break;
+                case CarServer_ClimateState_CopActivationTemp_CopActivationTempHigh :
+                  cabin_overheat_temp_select_->publish_state("High");
+                  break;
+                default:
+                  cabin_overheat_temp_select_->publish_state("Unknown");
+              }
+            }
+              else
+            {
+              ESP_LOGI (TAG, "No data to set cabin overheat temperature");
             }
 
             publishSensor (TextSensorId::LastUpdate, ctime(&timestamp));
@@ -2292,7 +2330,7 @@ namespace esphome
           break;
         }
 //        this->node_state = espbt::ClientState::ESTABLISHED;
-        this->parent_->set_state (espbt::ClientState::ESTABLISHED);
+this->parent_->set_state (espbt::ClientState::ESTABLISHED);
         this->status_clear_warning();
         ble_disconnected_ = BleConnected;
         number_updates_since_connection_ = 0; //Reset update loop counter
