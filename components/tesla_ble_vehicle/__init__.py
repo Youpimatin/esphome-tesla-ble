@@ -44,9 +44,11 @@ CONF_POLL_CHARGING_PERIOD       = "poll_charging_period" # Period to poll for da
 CONF_BLE_DISCONNECTED_MIN_TIME  = "ble_disconnected_min_time" # Minimum time BLE must be disconnected before sensors are Unknown (s)
 CONF_FAST_POLL_IF_UNLOCKED      = "fast_poll_if_unlocked" # if != 0, fast polls are enabled when unlocked
 CONF_WAKE_ON_BOOT               = "wake_on_boot" # != 0 wakes car on device boot
+CONF_ALLOW_SETTING_SCHEDULES    = "allow_setting_schedules" # if = 0 the set_charge_schedule action will reject all requests. MUST rebuild if changed
 CONF_CHARGER_SWITCH             = "charger_switch"
 CONF_DEFROST_SWITCH             = "defrost_switch"
 CONF_CABIN_OVERHEAT_PROTECTION  = "cabin_overheat_protection"
+CONF_CABIN_OVERHEAT_LIMIT       = "cabin_overheat_limit"
 
 SENSORS = {
     "is_asleep": binary (BinarySensorId.IsAsleep,
@@ -148,12 +150,13 @@ schema_dict = {
     cv.Optional(CONF_BLE_DISCONNECTED_MIN_TIME): cv.uint16_t,
     cv.Optional(CONF_FAST_POLL_IF_UNLOCKED): cv.uint16_t,
     cv.Optional(CONF_WAKE_ON_BOOT): cv.uint16_t,
-#    cv.Optional(CONF_CABIN_OVERHEAT_PROTECTION): select.select_schema(class_="CabinOverheatSelect", icon="mdi:heat-wave"),
+    cv.Optional(CONF_ALLOW_SETTING_SCHEDULES): cv.uint16_t,
 }
 
 schema_dict[cv.Optional(CONF_CHARGER_SWITCH)] = cv.use_id(switch.Switch)
 schema_dict[cv.Optional(CONF_DEFROST_SWITCH)] = cv.use_id(switch.Switch)
 schema_dict[cv.Optional(CONF_CABIN_OVERHEAT_PROTECTION)] = cv.use_id(select.Select)
+schema_dict[cv.Optional(CONF_CABIN_OVERHEAT_LIMIT)] = cv.use_id(select.Select)
 
 for key, spec in SENSORS.items():
     builder = SENSOR_TYPES_INFO[spec.type]["schema"]
@@ -181,6 +184,7 @@ async def to_code(config):
             config.get(CONF_BLE_DISCONNECTED_MIN_TIME),
             config.get(CONF_FAST_POLL_IF_UNLOCKED),
             config.get(CONF_WAKE_ON_BOOT),
+            config.get(CONF_ALLOW_SETTING_SCHEDULES),
         )
     )
 
@@ -193,6 +197,9 @@ async def to_code(config):
     if CONF_CABIN_OVERHEAT_PROTECTION in config:
         sel = await cg.get_variable(config[CONF_CABIN_OVERHEAT_PROTECTION])
         cg.add(var.set_cabin_overheat_select(sel))
+    if CONF_CABIN_OVERHEAT_LIMIT in config:
+        sel = await cg.get_variable(config[CONF_CABIN_OVERHEAT_LIMIT])
+        cg.add(var.set_cabin_overheat_temp_select(sel))
         
     # 🔁 Auto-register all sensors
     for key, spec in SENSORS.items():
