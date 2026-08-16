@@ -306,6 +306,7 @@ namespace esphome
                                      esp_ble_gattc_cb_param_t *param) override;
             void dump_config() override;
             void set_vin(const char *vin);
+            void set_ble_tx_power(int power); // LG 16/08/2026
             void load_polling_parameters (const int post_wake_poll_time, const int poll_data_period,
                                           const int poll_asleep_period, const int poll_charging_period,
                                           const int ble_disconnected_min_time, const int fast_poll_if_unlocked,
@@ -527,6 +528,7 @@ namespace esphome
             void initializePrivateKey();
             void loadSessionInfo();
             void loadDomainSessionInfo(UniversalMessage_Domain domain);
+            int ble_tx_power_{9}; // LG 16/08/2026
         };
 
     } // namespace tesla_ble_vehicle
