@@ -58,6 +58,7 @@ tesla_ble_vehicle:
   ble_client_id: ble_tesla_id
   id: tesla_ble_vehicle_id
   vin: $tesla_vin
+  ble_tx_power: 9
   charger_switch: sw_charger
   defrost_switch: sw_defrost_car
   cabin_overheat_protection: sel_cabin_overheat_protection
