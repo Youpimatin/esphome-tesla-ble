@@ -52,6 +52,8 @@ namespace esphome
 
 void TeslaBLEVehicle::set_ble_tx_power(int power) // LG 16/08/2026
 {
+    this->ble_tx_power_ = power;
+
     esp_power_level_t level;
 
     switch (power)
