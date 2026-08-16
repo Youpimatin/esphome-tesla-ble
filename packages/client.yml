@@ -677,6 +677,23 @@ number:
     on_value:
       - lambda: |-
           id(tesla_ble_vehicle_id)->ble_disconnected_min_time_ = x * 1000;
+  - platform: template
+    name: Puissance TX BLE
+    id: ble_tx_power
+    icon: mdi:bluetooth
+    unit_of_measurement: dBm
+    mode: SLIDER
+    min_value: -12
+    max_value: 9
+    step: 3
+    initial_value: 9
+    optimistic: true
+    disabled_by_default: false
+    entity_category: config
+    set_action:
+      then:
+        - lambda: |-
+            id(tesla_ble_vehicle_id)->set_ble_tx_power(static_cast<int>(x));
 
 text:
   - platform: template
