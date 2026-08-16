@@ -141,7 +141,8 @@ SENSOR_TYPES_INFO = {
 schema_dict = {
     cv.GenerateID(CONF_ID): cv.declare_id(TeslaBLEVehicle),
     cv.Required(CONF_VIN): cv.string,
-    cv.Optional(CONF_BLE_TX_POWER, default=9): cv.int_range(min=-12, max=9),
+    cv.Optional(CONF_BLE_TX_POWER, default=9):
+        cv.int_range(min=-12, max=9),
     cv.Optional(CONF_POST_WAKE_POLL_TIME): cv.uint16_t,
     cv.Optional(CONF_POLL_DATA_PERIOD): cv.uint16_t,
     cv.Optional(CONF_POLL_ASLEEP_PERIOD): cv.uint16_t,
