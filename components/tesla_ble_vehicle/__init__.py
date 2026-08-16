@@ -37,6 +37,7 @@ def text(id, **schema):          return SensorSpec(SensorTypes.TEXT, id, schema)
 
 # Constants
 CONF_VIN = "vin"
+CONF_BLE_TX_POWER = "ble_tx_power"
 CONF_POST_WAKE_POLL_TIME        = "post_wake_poll_time" # How long to poll for data after car awakes (s)
 CONF_POLL_DATA_PERIOD           = "poll_data_period" # Normal period when polling for data when not asleep (s)
 CONF_POLL_ASLEEP_PERIOD         = "poll_asleep_period" # Period to poll for data when asleep (s)
@@ -140,7 +141,7 @@ SENSOR_TYPES_INFO = {
 schema_dict = {
     cv.GenerateID(CONF_ID): cv.declare_id(TeslaBLEVehicle),
     cv.Required(CONF_VIN): cv.string,
-
+    cv.Optional(CONF_BLE_TX_POWER, default=9): cv.int_range(min=-12, max=9),
     cv.Optional(CONF_POST_WAKE_POLL_TIME): cv.uint16_t,
     cv.Optional(CONF_POLL_DATA_PERIOD): cv.uint16_t,
     cv.Optional(CONF_POLL_ASLEEP_PERIOD): cv.uint16_t,
@@ -171,7 +172,7 @@ async def to_code(config):
     await ble_client.register_ble_node(var, config)
 
     cg.add(var.set_vin(config[CONF_VIN]))
-
+    cg.add(var.set_ble_tx_power(config[CONF_BLE_TX_POWER]))
     cg.add(
         var.load_polling_parameters(
             config.get(CONF_POST_WAKE_POLL_TIME),
