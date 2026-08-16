@@ -27,8 +27,12 @@ esp32:
   toolchain: platformio
 
 external_components:
-  - source: $tesla_ble_component
+  - source:
+      type: git
+      url: https://github.com/Youpimatin/esphome-tesla-ble
+      ref: main
     components: $ble_components
+    refresh: 0s
     
 logger:
   level: INFO
