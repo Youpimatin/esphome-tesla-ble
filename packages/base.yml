@@ -28,11 +28,10 @@ esp32:
 
 external_components:
   - source:
-      type: git
-      url: https://github.com/Youpimatin/esphome-tesla-ble
-      ref: main
-    components: $ble_components
-    refresh: 0s
+      type: local
+      path: my_components
+    components:
+      - tesla_ble_vehicle
     
 logger:
   level: INFO
