@@ -1,3 +1,4 @@
+#include <esp_bt.h> // LG 16/08/2026
 #include <esp_random.h>
 #include <esphome/core/helpers.h>
 #include <esphome/core/log.h>
@@ -48,6 +49,57 @@ namespace esphome
       this->initializePrivateKey();
       this->loadSessionInfo();
     }
+
+void TeslaBLEVehicle::set_ble_tx_power(int power) // LG 16/08/2026
+{
+    esp_power_level_t level;
+
+    switch (power)
+    {
+        case -12:
+            level = ESP_PWR_LVL_N12;
+            break;
+        case -9:
+            level = ESP_PWR_LVL_N9;
+            break;
+        case -6:
+            level = ESP_PWR_LVL_N6;
+            break;
+        case -3:
+            level = ESP_PWR_LVL_N3;
+            break;
+        case 0:
+            level = ESP_PWR_LVL_N0;
+            break;
+        case 3:
+            level = ESP_PWR_LVL_P3;
+            break;
+        case 6:
+            level = ESP_PWR_LVL_P6;
+            break;
+        case 9:
+            level = ESP_PWR_LVL_P9;
+            break;
+        default:
+            ESP_LOGW(TAG, "Invalid BLE TX power %d dBm, using +9 dBm", power);
+            level = ESP_PWR_LVL_P9;
+            break;
+    }
+
+    esp_err_t err = esp_ble_tx_power_set(
+        ESP_BLE_PWR_TYPE_CONN_HDL0,
+        level
+    );
+
+    if (err == ESP_OK)
+    {
+        ESP_LOGI(TAG, "BLE connection TX power set to %d dBm", power);
+    }
+    else
+    {
+        ESP_LOGW(TAG, "Failed to set BLE TX power: %s", esp_err_to_name(err));
+    }
+}
 
     void TeslaBLEVehicle::initializeFlash()
     {
@@ -2183,6 +2235,9 @@ namespace esphome
         if (param->open.status == ESP_GATT_OK)
         {
           ESP_LOGI(TAG, "Connected successfully!");
+
+            this->set_ble_tx_power(this->ble_tx_power_); // LG 16/08/2026
+          
 //          this->status_clear_warning();
 //          ble_disconnected_ = BleConnected;
 //          number_updates_since_connection_ = 0; //Reset update loop counter
