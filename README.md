@@ -105,7 +105,7 @@ There are two categories, those available even when asleep and those only when a
 
 ### Charging schedules
 
-Please refer to [charging_schedules.md](./docs/charging_schedules.md) for how to view and delete charging schedules.
+Please refer to [charging_schedules.md](./docs/charging_schedules.md) for how to view, set and delete charging schedules.
 
 ### Diagnostics
 
