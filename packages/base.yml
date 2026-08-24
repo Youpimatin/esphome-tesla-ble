@@ -24,7 +24,7 @@ esp32:
   flash_size: $flash_size
   framework:
     type: esp-idf
-  toolchain: platformio
+#  toolchain: platformio
 
 external_components:
   - source: $tesla_ble_component
