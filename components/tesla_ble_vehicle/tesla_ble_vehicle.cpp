@@ -1459,42 +1459,15 @@ namespace esphome
     int TeslaBLEVehicle::lockVehicle (VCSEC_RKEAction_E lock)
     {
       static std:: string lock_command;
-//      ESP_LOGI (TAG, "(Un)locking) vehicle %d", lock);
       // enqueue command
       switch (lock)
       {
         case VCSEC_RKEAction_E_RKE_ACTION_UNLOCK:
           lock_command = "unlock vehicle";
-/*          ESP_LOGI(TAG, "Adding unlock Vehicle command to queue");
-          placeAtFrontOfQueue (UniversalMessage_Domain_DOMAIN_VEHICLE_SECURITY, 
-            [this]()
-            {
-              int return_code = this->sendVCSECActionMessage(VCSEC_RKEAction_E_RKE_ACTION_UNLOCK);
-              if (return_code != 0)
-              {
-                ESP_LOGE(TAG, "Failed to send lock command");
-                return return_code;
-              }
-              return 0;
-            },
-            "unlock vehicle");
-*/          break;
+          break;
         case VCSEC_RKEAction_E_RKE_ACTION_LOCK:
           lock_command = "sendCarServerVehicleActionMessagelock vehicle";
-/*          ESP_LOGI(TAG, "Adding lock Vehicle command to queue");
-          placeAtFrontOfQueue (UniversalMessage_Domain_DOMAIN_VEHICLE_SECURITY, 
-            [this]()
-            {
-              int return_code = this->sendVCSECActionMessage(VCSEC_RKEAction_E_RKE_ACTION_LOCK);
-              if (return_code != 0)
-              {
-                ESP_LOGE(TAG, "Failed to send lock command");
-                return return_code;
-              }
-              return 0;
-            },
-            "lock vehicle");
-*/          break;
+          break;
         default:
           ESP_LOGE(TAG, "Invalid lock request");
           return -1;
