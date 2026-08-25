@@ -293,13 +293,12 @@ namespace esphome
             int ble_disconnected_time_;
             int ble_disconnected_min_time_;
             int fast_poll_if_unlocked_ = 1; // != 0 enables fast polling
-            int allow_setting_schedules_ =0;
+            int allow_setting_schedules_ = 0;
             int number_updates_since_connection_ = 0;
             UniversalMessage_RoutableMessage read_queue_message_;
             CarServer_Response static_carserver_response_;
-//            CarServer_Action static_action_message_;
             unsigned char static_message_buffer_[UniversalMessage_RoutableMessage_size];
- CarServer_Action actions_action_message_;
+            CarServer_Action actions_action_message_;
             //BLETXChunk static_tx_chunk_;
             //BLERXChunk static_rx_chunk_;
 
