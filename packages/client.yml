@@ -61,6 +61,7 @@ tesla_ble_vehicle:
   charger_switch: sw_charger
   defrost_switch: sw_defrost_car
   cabin_overheat_protection: sel_cabin_overheat_protection
+  cabin_overheat_limit: sel_cabin_overheat_limit
   update_interval: 10s # default
   post_wake_poll_time: 300 # How long to poll for data after car awakes (s)
   poll_data_period: 60 # Normal period when polling for data when not asleep (s)
@@ -69,6 +70,7 @@ tesla_ble_vehicle:
   ble_disconnected_min_time: 300 # Minimum time BLE must be disconnected before sensors are Unknwon (s)
   fast_poll_if_unlocked: 0 # if != 0, fast polls are enabled when unlocked
   wake_on_boot: 0 # != 0 wakes car on device boot
+  allow_setting_schedules: 0 # if = 0 the set_charge_schedule action will reject all requests. MUST rebuild if changed
 
   is_asleep:
     id: "is_asleep"
@@ -398,9 +400,11 @@ switch:
     turn_on_action:
       - lambda: |-
           id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage (tesla_ble_vehicle::BLE_CarServer_VehicleAction::DEFROST_CAR, 1);
+#          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage (tesla_ble_vehicle::BLE_CarServer_VehicleAction::GET_CLIMATE_STATE, 0);
     turn_off_action:
       - lambda: |-
           id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage (tesla_ble_vehicle::BLE_CarServer_VehicleAction::DEFROST_CAR, 0);
+#          id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage (tesla_ble_vehicle::BLE_CarServer_VehicleAction::GET_CLIMATE_STATE, 0);
 
   - platform: template
     id: fast_poll_if_unlocked
@@ -721,5 +725,67 @@ select:
               param = CarServer_SetCabinOverheatProtectionAction_fan_only_tag;
             }
             id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage (tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CABIN_OVERHEAT_PROTECTION, param);
+            //id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage (tesla_ble_vehicle::BLE_CarServer_VehicleAction::GET_CLIMATE_STATE, 0);
           }
     disabled_by_default: true
+  - platform: template
+    name: "Cabin overheat limit"
+    id: sel_cabin_overheat_limit
+    icon: mdi:thermometer-lines
+    options:
+      - "Low"
+      - "Medium"
+      - "High"
+      - "Unknown"
+    initial_option: "Unknown"
+    set_action:
+      - lambda: |-
+          int param = 0;
+          if (x != "Unknown")
+          {
+            if (x == "Low")
+            {
+              param = CarServer_ClimateState_CopActivationTemp_CopActivationTempLow;
+            }
+            else if (x == "Medium")
+            {
+              param = CarServer_ClimateState_CopActivationTemp_CopActivationTempMedium;
+            }
+            else if (x == "High")
+            {
+              param = CarServer_ClimateState_CopActivationTemp_CopActivationTempHigh ;
+            }
+            id(tesla_ble_vehicle_id)->sendCarServerVehicleActionMessage (tesla_ble_vehicle::BLE_CarServer_VehicleAction::SET_CABIN_OVERHEAT_LIMIT, param);
+          }
+    disabled_by_default: true
+
+api:
+  actions:
+    - action: set_charge_schedule
+      variables:
+#        id: uint64   ## Set internally
+        name: string
+        days_of_week: int
+        start_enabled: bool
+        start_time: int
+        end_enabled: bool
+        end_time: int
+        one_time: bool
+        enabled: bool
+        latitude: float
+        longitude: float
+      then:
+        - lambda: |-
+            id(tesla_ble_vehicle_id)->actions_setChargeSchedule (
+              // id,
+              name,
+              days_of_week,
+              start_enabled,
+              start_time,
+              end_enabled,
+              end_time,
+              one_time,
+              enabled,
+              latitude,
+              longitude
+            );

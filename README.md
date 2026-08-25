@@ -64,8 +64,8 @@ These are implemented as switches, covers, buttons or numbers. Where indicated, 
 - Media play/plause (button). This is disabled by default.
 - Low power mode (switch). This is disabled by default. Note the status is not reported by the car so its status is not reliable. Switching it On or Off will nevertheless cause the request to be sent to the car.
 - Keep accessory power on (switch). This is disabled by default. Note the status is not reported by the car so its status is not reliable. Switching it On or Off will nevertheless cause the request to be sent to the car.
-- Cabin overheat protection. A selector with the options `Off, On, Fan, Unknown` (Unknown cannot be selected, it's here purely to enable a status of `Unknown` - a limitation of ESPHome.) Note this control also reflects the current status, there is no equivalent sensor. This is disabled by default.
-
+- Cabin overheat protection (selector). Options are `Off, On, Fan, Unknown` (Unknown cannot be selected, it's here purely to enable a status of `Unknown` - a limitation of ESPHome). Note this control also reflects the current status, there is no equivalent sensor. This is disabled by default.
+- Cabin overheat limit (selector) - does not work for all Tesla software versions, an error will be recorded in the log if so. Options are `Low, Medium, High, Unknown` (Unknown cannot be selected, it's here purely to enable a status of `Unknown` - a limitation of ESPHome). Note this control also reflects the current status, there is no equivalent sensor. This is disabled by default.
 ### Vehicle Information Sensors
 
 There are two categories, those available even when asleep and those only when awake.
@@ -105,7 +105,7 @@ There are two categories, those available even when asleep and those only when a
 
 ### Charging schedules
 
-Please refer to [charging_schedules.md](./docs/charging_schedules.md) for how to view and delete charging schedules.
+Please refer to [charging_schedules.md](./docs/charging_schedules.md) for how to view, set and delete charging schedules.
 
 ### Diagnostics
 
