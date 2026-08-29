@@ -67,6 +67,7 @@ namespace esphome
             GET_CHARGE_SCHEDULE_STATE,
             DEL_CHARGING_SCHEDULE,
             SET_CABIN_OVERHEAT_PROTECTION,
+            SET_CABIN_OVERHEAT_LIMIT,
             _COUNT  // sentinel value to get count of entries
         };
         enum class AllowedMsg // The type of messages to send
@@ -105,7 +106,7 @@ namespace esphome
             GetOnSet getOnSet;
             int numberUpdatesBetweenGets; // Only used for GetVehicleDataMessage
         };
-        static constexpr std::array<ActionMessageDetail, 28> ACTION_SPECIFICS // Don't forget to increase the size when adding a row
+        static constexpr std::array<ActionMessageDetail, 29> ACTION_SPECIFICS // Don't forget to increase the size when adding a row
         {{
             {BLE_CarServer_VehicleAction::DO_NOTHING,                       "",                          AllowedMsg::Empty,                 0,                                                              GetOnSet::Invalid,                0},
             {BLE_CarServer_VehicleAction::GET_CHARGE_STATE,                 "getChargeState",            AllowedMsg::GetVehicleDataMessage, CarServer_GetVehicleData_getChargeState_tag,                    GetOnSet::Invalid,                1},
@@ -134,7 +135,8 @@ namespace esphome
             {BLE_CarServer_VehicleAction::SET_KEEP_ACCESSORY_SWITCH,        "setKeepAccessorySwitch",    AllowedMsg::VehicleActionMessage,  CarServer_VehicleAction_setKeepAccessoryPowerModeAction_tag,  	GetOnSet::Invalid,                0},
             {BLE_CarServer_VehicleAction::GET_CHARGE_SCHEDULE_STATE,        "getChargeScheduleState",    AllowedMsg::GetVehicleDataMessage, CarServer_GetVehicleData_getChargeScheduleState_tag,          	GetOnSet::Invalid,                0},
             {BLE_CarServer_VehicleAction::DEL_CHARGING_SCHEDULE,            "delChargingSchedule",       AllowedMsg::VehicleActionMessage,  CarServer_VehicleAction_removeChargeScheduleAction_tag,         GetOnSet::GetChargeScheduleState, 0},
-            {BLE_CarServer_VehicleAction::SET_CABIN_OVERHEAT_PROTECTION,    "setCabinOverheatProtection",AllowedMsg::VehicleActionMessage,  CarServer_VehicleAction_setCabinOverheatProtectionAction_tag,   GetOnSet::GetClimateState,                0},
+            {BLE_CarServer_VehicleAction::SET_CABIN_OVERHEAT_PROTECTION,    "setCabinOverheatProtection",AllowedMsg::VehicleActionMessage,  CarServer_VehicleAction_setCabinOverheatProtectionAction_tag,   GetOnSet::GetClimateState,        0},
+            {BLE_CarServer_VehicleAction::SET_CABIN_OVERHEAT_LIMIT,         "setCabinOverheatLimit",     AllowedMsg::VehicleActionMessage,  CarServer_VehicleAction_setCopTempAction_tag,                   GetOnSet::GetClimateState,        0},
         }};
         static_assert(ACTION_SPECIFICS.size() == static_cast<std::size_t>(BLE_CarServer_VehicleAction::_COUNT), "ACTION_SPECIFICS out of sync with enum");
         static const char *const TAG = "tesla_ble_vehicle";
@@ -291,10 +293,12 @@ namespace esphome
             int ble_disconnected_time_;
             int ble_disconnected_min_time_;
             int fast_poll_if_unlocked_ = 1; // != 0 enables fast polling
+            int allow_setting_schedules_ = 0;
             int number_updates_since_connection_ = 0;
             UniversalMessage_RoutableMessage read_queue_message_;
             CarServer_Response static_carserver_response_;
             unsigned char static_message_buffer_[UniversalMessage_RoutableMessage_size];
+            CarServer_Action actions_action_message_;
             //BLETXChunk static_tx_chunk_;
             //BLERXChunk static_rx_chunk_;
 
@@ -310,7 +314,7 @@ namespace esphome
             void load_polling_parameters (const int post_wake_poll_time, const int poll_data_period,
                                           const int poll_asleep_period, const int poll_charging_period,
                                           const int ble_disconnected_min_time, const int fast_poll_if_unlocked,
-                                          const int wake_on_boot);
+                                          const int wake_on_boot, const int allow_setting_schedules);
             void process_command_queue();
             void process_response_queue();
             void process_ble_read_queue();
@@ -337,6 +341,21 @@ namespace esphome
             int sendSessionInfoRequest(UniversalMessage_Domain domain);
             int sendVCSECInformationRequest(void);
             void enqueueVCSECInformationRequest(bool force = false);
+            int actions_setChargeSchedule (
+                                           std::string name,
+                                           int days_of_week,
+                                           bool start_enabled,
+                                           int start_time,
+                                           bool end_enabled,
+                                           int end_time,
+                                           bool one_time,
+                                           bool enabled,
+                                           float latitude,
+                                           float longitude
+                                          );
+            int actions_buildCarServerGetVehicleDataMessage(pb_byte_t *output_buffer, size_t *output_length, int which_get);
+            int actions_buildCarServerVehicleActionMessage (int32_t parameter, pb_byte_t *output_buffer, size_t *output_length, int which_tag, uint64_t long_param = 0);
+
             int wake_on_boot_ = 0; // != 0 wakes car on device boot
 
             int writeBLE(const unsigned char *message_buffer, size_t message_length, esp_gatt_write_type_t write_type, esp_gatt_auth_req_t auth_req);
@@ -411,6 +430,9 @@ namespace esphome
             }
             void set_cabin_overheat_select (select::Select *sel) {
                 cabin_overheat_select_ = sel;
+            }
+            void set_cabin_overheat_temp_select (select::Select *sel) {
+                cabin_overheat_temp_select_ = sel;
             }
             inline static constexpr std::pair<int, const char*> SHIFT_MAP[] = {
                 {CarServer_ShiftState_Invalid_tag,  "Invalid"},
@@ -521,6 +543,7 @@ namespace esphome
             switch_::Switch *charger_switch_{nullptr};
             switch_::Switch *defrost_switch_{nullptr};
             select::Select  *cabin_overheat_select_{nullptr};
+            select::Select  *cabin_overheat_temp_select_{nullptr};
             std::vector<unsigned char> ble_read_buffer_;
 
             void initializeFlash();
