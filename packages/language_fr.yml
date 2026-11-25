@@ -114,7 +114,7 @@ button:
   - id: !extend btn_unlatch_driver_door
     name: "Ouvrir la porte conducteur"
   - id: !extend btn_media_play
-    name: "Lecture/Pause"
+    name: "Lecture⁄Pause"
   - id: !extend btn_media_next_track
     name: "Piste suivante"
   - id: !extend btn_media_previous_track
